@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Soul Chain Voice Solitaire</title>
+  <meta name="description" content="Voice-controlled blockchain solitaire with accessibility-first community features">
+  <meta name="theme-color" content="#1f2937">
+  <link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" />
+  <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" />
+  <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU291bCBDaGFpbiBTb2xpdGFpcmUiLCJzaG9ydF9uYW1lIjoiU291bENoYWluIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMxMTE4MjciLCJ0aGVtZV9jb2xvciI6IiMxZjI5MzciLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9wbmc7YmFzZTY0LGlWQk9SdzBLR2dvQUFBQU5TVWhFVWdBQUFBRUFBQUFCQ0FZQUFBQWZGY1NKQUFBQURVbEVRVlI0Mm1Oa1lQaGZEd0FDaHdHQTYwZTZrZ0FBQUFCSlJVNUVya0pnZ2c9PSIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmcifV19" />
+  <style>
+    :root {
+      --bg-primary: #111827; --bg-secondary: #222; --bg-tertiary: #1f2937;
+      --text-primary: #fff; --text-secondary: #9ca3af; --accent-blue: #3b82f6;
+      --accent-blue-light: #60a5fa; --accent-green: #10b981; --bg-green: #065f46;
+      --accent-red: #f87171; --bg-red: #7f1d1d; --accent-gold: #f59e0b;
+      --bg-gold: #92400e; --accent-purple: #8b5cf6; --bg-purple: #581c87;
+      --border-radius: 0.5em; --shadow: 0 0 24px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary); color: var(--text-primary); margin: 0; padding: 0;
+      display: flex; flex-direction: column; align-items: center; min-height: 100vh; line-height: 1.5;
+    }
+    .container {
+      max-width: 600px; width: 100%; margin: 1em auto; padding: 2em;
+      background: var(--bg-secondary); border-radius: 1em; box-shadow: var(--shadow);
+      transition: box-shadow 0.3s ease;
+    }
+    .container.listening {
+      box-shadow: 0 0 32px var(--accent-blue); animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 32px var(--accent-blue); }
+      50% { box-shadow: 0 0 48px var(--accent-blue-light); }
+      100% { box-shadow: 0 0 32px var(--accent-blue); }
+    }
+    .center { text-align: center; }
+    h1 { margin: 0 0 0.5em 0; font-size: 2em; font-weight: 600; }
+    .soul-chain-header {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      color: white; padding: 1em; border-radius: var(--border-radius); margin-bottom: 1em; font-size: 0.9em;
+    }
+    .player-status {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-bottom: 1em;
+    }
+    .stat-card {
+      background: var(--bg-tertiary); padding: 1em; border-radius: var(--border-radius); text-align: center;
+    }
+    .stat-value { font-size: 1.5em; font-weight: 600; color: var(--accent-gold); }
+    .stat-label { font-size: 0.8em; color: var(--text-secondary); margin-top: 0.25em; }
+    .badges { display: flex; gap: 0.5em; flex-wrap: wrap; justify-content: center; margin: 1em 0; }
+    .badge {
+      background: var(--bg-gold); color: var(--accent-gold); padding: 0.25em 0.75em;
+      border-radius: 2em; font-size: 0.8em; font-weight: 600;
+    }
+    .badge.new { animation: badgeGlow 2s ease-in-out; }
+    @keyframes badgeGlow {
+      0% { box-shadow: 0 0 0 var(--accent-gold); }
+      50% { box-shadow: 0 0 20px var(--accent-gold); }
+      100% { box-shadow: 0 0 0 var(--accent-gold); }
+    }
+    .msg {
+      background: var(--bg-tertiary); padding: 1.25em; border-radius: var(--border-radius);
+      margin-bottom: 1em; font-size: 1em; min-height: 3em; display: flex;
+      align-items: center; justify-content: center; text-align: center; word-wrap: break-word;
+    }
+    .status {
+      background: var(--bg-green); color: var(--accent-green); padding: 0.75em 1em;
+      border-radius: var(--border-radius); margin-bottom: 1em; font-size: 0.9em; font-weight: 500;
+    }
+    .error {
+      background: var(--bg-red); color: var(--accent-red); padding: 0.75em 1em;
+      border-radius: var(--border-radius); margin-bottom: 1em; font-size: 0.9em; font-weight: 500;
+    }
+    .coin-earned {
+      background: var(--bg-gold); color: var(--accent-gold); padding: 0.75em 1em;
+      border-radius: var(--border-radius); margin-bottom: 1em; font-size: 0.9em; font-weight: 600;
+      animation: coinEarned 1.5s ease-out;
+    }
+    @keyframes coinEarned {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .click-prompt {
+      background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; padding: 1.25em;
+      border-radius: var(--border-radius); margin-bottom: 1em; cursor: pointer;
+      transition: all 0.3s ease; border: none; font-size: 1em; font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .click-prompt:hover {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb); transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    }
+    .instructions {
+      color: var(--text-secondary); font-size: 0.85em; margin-top: 1em; line-height: 1.6;
+      background: rgba(255,255,255,0.03); padding: 1em; border-radius: var(--border-radius);
+    }
+    .command-section { margin-bottom: 1.5em; }
+    .command-section h3 {
+      color: var(--accent-blue-light); margin: 0 0 0.5em 0; font-size: 1em; font-weight: 600;
+    }
+    .command-grid { display: grid; gap: 0.5em; }
+    .command-item { display: flex; align-items: flex-start; gap: 0.75em; }
+    .command-name {
+      color: var(--accent-blue-light); font-weight: 600; min-width: 120px;
+      font-family: 'Courier New', monospace; font-size: 0.8em;
+    }
+    .praise-feed {
+      background: var(--bg-tertiary); padding: 1em; border-radius: var(--border-radius);
+      margin-top: 1em; max-height: 200px; overflow-y: auto;
+    }
+    .praise-item {
+      padding: 0.5em; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85em;
+    }
+    .praise-item:last-child { border-bottom: none; }
+    .offline-indicator {
+      position: fixed; top: 1em; right: 1em; background: var(--bg-green);
+      color: var(--accent-green); padding: 0.5em 1em; border-radius: var(--border-radius);
+      font-size: 0.8em; z-index: 1000; display: none;
+    }
+    .offline-indicator.show { display: block; }
+    @media (prefers-reduced-motion: reduce) {
+      .container.listening, .badge.new { animation: none; }
+      .click-prompt:hover { transform: none; }
+    }
+    @media (max-width: 600px) {
+      .container { margin: 0.5em; padding: 1.5em; }
+      .player-status { grid-template-columns: 1fr; gap: 0.5em; }
+      .command-name { min-width: 100px; font-size: 0.75em; }
+    }
+    .leaderboard {
+      background: var(--bg-tertiary); padding: 1em; border-radius: var(--border-radius); margin-top: 1em;
+    }
+    .leaderboard-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5em 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .leaderboard-item:last-child { border-bottom: none; }
+    .player-name { font-weight: 600; }
+    .player-coins { color: var(--accent-gold); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="offline-indicator" id="offline-indicator">
+    📱 Running offline
+  </div>
+
+  <main class="container center" role="main" id="game-container">
+    <h1>🔗 Soul Chain Solitaire</h1>
+    
+    <div class="soul-chain-header">
+      <strong>🛡️ Welcome to the Soul Chain</strong><br>
+      Voice-native • Accessibility-first • Community-powered
+    </div>
+
+    <div class="player-status" id="player-status">
+      <div class="stat-card">
+        <div class="stat-value" id="coin-count">350</div>
+        <div class="stat-label">Soul Coins</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="gift-count">0</div>
+        <div class="stat-label">Coins Gifted</div>
+      </div>
+    </div>
+
+    <div class="badges" id="badges-container">
+      <div class="badge">💡 First Light</div>
+    </div>
+    
+    <div id="status-area"></div>
+    
+    <div id="msg" class="msg" aria-live="polite" role="status">
+      Ready to manifest your destiny! Click below to activate voice commands.
+    </div>
+    
+    <button id="click-prompt" class="click-prompt" aria-label="Activate voice commands">
+      🎤 Click to Start Voice Commands
+    </button>
+    
+    <div class="instructions">
+      <div class="command-section">
+        <h3>🎮 Game Commands</h3>
+        <div class="command-grid">
+          <div class="command-item">
+            <span class="command-name">"start game"</span>
+            <span>Begin a new solitaire game</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"draw card"</span>
+            <span>Draw from the deck to waste pile</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"describe board"</span>
+            <span>Hear the current game state</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"game stats"</span>
+            <span>Hear progress and coin earnings</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"move column one to column two"</span>
+            <span>Move stack from column 1 to 2 (replace numbers as needed)</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"move waste to column three"</span>
+            <span>Move top waste to column 3 (replace number as needed)</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"move waste to foundation"</span>
+            <span>Move top waste to appropriate foundation</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"move column four to foundation"</span>
+            <span>Move top card from column 4 to foundation (replace number as needed)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="command-section">
+        <h3>🔗 Soul Chain Commands</h3>
+        <div class="command-grid">
+          <div class="command-item">
+            <span class="command-name">"my coins"</span>
+            <span>Check your coin balance</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"my badges"</span>
+            <span>Hear your earned badges</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"gift 10 coins to @username with message thanks"</span>
+            <span>Give coins to community members (customize amount, user, message)</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"leaderboard"</span>
+            <span>Hear top community members</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"praise feed"</span>
+            <span>Hear recent community gifts</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="command-section">
+        <h3>ℹ️ Help Commands</h3>
+        <div class="command-grid">
+          <div class="command-item">
+            <span class="command-name">"help"</span>
+            <span>List all available commands</span>
+          </div>
+          <div class="command-item">
+            <span class="command-name">"repeat"</span>
+            <span>Hear the last message again</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="praise-feed" id="praise-feed">
+      <strong>🕊️ Recent Praise Feed:</strong>
+      <div class="praise-item">Welcome to the Soul Chain! Complete your first game to start earning coins.</div>
+    </div>
+  </main>
+<script>
+  // Soul Chain Core System (Simplified for Web)
+  class SoulChainCore {
+    constructor() {
+      this.currentPlayer = this.initializePlayer();
+      this.praiseFeed = [];
+      this.communityPlayers = this.initializeCommunity();
+      this.badges = {
+        "First Light": { icon: "💡", description: "Welcome to the Soul Chain" },
+        "Card Master": { icon: "🎴", description: "Complete 5 solitaire games" },
+        "Coin Collector": { icon: "🪙", description: "Earn 100 coins from gameplay" },
+        "Generous Soul": { icon: "💝", description: "Gift 50 coins to others" },
+        "Community Builder": { icon: "🏗️", description: "Gift to 5 different players" },
+        "Accessibility Champion": { icon: "♿", description: "Play in accessibility mode" },
+        "Daily Player": { icon: "📅", description: "Play games 5 days in a row" }
+      };
+      this.loadPlayerData();
+      this.updatePraiseFeed();
+      this.renderBadges();
+      this.updatePlayerStatus();
+    }
+
+    initializePlayer() {
+      return {
+        playerId: "@VoicePlayer" + Math.floor(Math.random() * 1000),
+        coinsEarned: 350, // Starter package
+        coinsGifted: 0,
+        accessibilityMode: "voice-first",
+        gamesPlayed: 0,
+        badges: ["First Light"],
+        dailyStreak: 0,
+        lastPlayDate: null,
+        hoursPlayed: 0,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    initializeCommunity() {
+      return [
+        { playerId: "@BlindPhoenix", coinsEarned: 420, coinsGifted: 75, badges: ["First Light", "Accessibility Champion", "Generous Soul"] },
+        { playerId: "@ChainBuilder", coinsEarned: 380, coinsGifted: 45, badges: ["First Light", "Community Builder"] },
+        { playerId: "@CardMaster", coinsEarned: 550, coinsGifted: 20, badges: ["First Light", "Card Master", "Coin Collector"] },
+        { playerId: "@NewSoul", coinsEarned: 360, coinsGifted: 10, badges: ["First Light"] }
+      ];
+    }
+
+    awardCoins(amount, reason) {
+      this.currentPlayer.coinsEarned += amount;
+      this.savePlayerData();
+      this.checkBadges();
+      return { amount, reason, newBalance: this.currentPlayer.coinsEarned };
+    }
+
+    giftCoins(recipientId, amount, message) {
+      const availableCoins = this.currentPlayer.coinsEarned - this.currentPlayer.coinsGifted;
+      if (availableCoins < amount) {
+        return { success: false, error: `Not enough coins. You have ${availableCoins} available.` };
+      }
+      let recipient = this.communityPlayers.find(p => p.playerId === recipientId);
+      if (!recipient) {
+        recipient = { playerId: recipientId, coinsEarned: amount, coinsGifted: 0, badges: ["First Light"] };
+        this.communityPlayers.push(recipient);
+      } else {
+        recipient.coinsEarned += amount;
+      }
+      this.currentPlayer.coinsGifted += amount;
+      this.praiseFeed.unshift({
+        from: this.currentPlayer.playerId,
+        to: recipientId,
+        amount,
+        message,
+        timestamp: new Date(),
+        accessibilityBoost: recipient.badges?.includes("Accessibility Champion")
+      });
+      if (this.praiseFeed.length > 10) {
+        this.praiseFeed = this.praiseFeed.slice(0, 10);
+      }
+      this.checkBadges();
+      this.savePlayerData();
+      return { success: true, recipient: recipientId, amount };
+    }
+
+    checkBadges() {
+      const newBadges = [];
+      if (this.currentPlayer.gamesPlayed >= 5 && !this.currentPlayer.badges.includes("Card Master")) {
+        newBadges.push("Card Master");
+      }
+      const gameplayCoins = this.currentPlayer.coinsEarned - 350;
+      if (gameplayCoins >= 100 && !this.currentPlayer.badges.includes("Coin Collector")) {
+        newBadges.push("Coin Collector");
+      }
+      if (this.currentPlayer.coinsGifted >= 50 && !this.currentPlayer.badges.includes("Generous Soul")) {
+        newBadges.push("Generous Soul");
+      }
+      const uniqueRecipients = new Set(this.praiseFeed.filter(p => p.from === this.currentPlayer.playerId).map(p => p.to));
+      if (uniqueRecipients.size >= 5 && !this.currentPlayer.badges.includes("Community Builder")) {
+        newBadges.push("Community Builder");
+      }
+      if (this.currentPlayer.accessibilityMode === "voice-first" && !this.currentPlayer.badges.includes("Accessibility Champion")) {
+        newBadges.push("Accessibility Champion");
+      }
+      newBadges.forEach(badge => {
+        this.currentPlayer.badges.push(badge);
+        this.displayNewBadge(badge);
+      });
+      return newBadges;
+    }
+
+    displayNewBadge(badgeName) {
+      const badgeInfo = this.badges[badgeName];
+      const badgeElement = document.createElement('div');
+      badgeElement.className = 'badge new';
+      badgeElement.textContent = `${badgeInfo.icon} ${badgeName}`;
+      document.getElementById('badges-container').appendChild(badgeElement);
+      setTimeout(() => {
+        speak(`Badge earned: ${badgeName}! ${badgeInfo.description}`);
+      }, 1000);
+    }
+
+    getLeaderboard(type = 'coins') {
+      const allPlayers = [this.currentPlayer, ...this.communityPlayers];
+      if (type === 'generosity') {
+        return allPlayers.sort((a, b) => (b.coinsGifted || 0) - (a.coinsGifted || 0)).slice(0, 5);
+      }
+      return allPlayers.sort((a, b) => b.coinsEarned - a.coinsEarned).slice(0, 5);
+    }
+
+    savePlayerData() {
+      try {
+        localStorage.setItem('soulChainPlayer', JSON.stringify(this.currentPlayer));
+        localStorage.setItem('soulChainPraise', JSON.stringify(this.praiseFeed));
+      } catch (error) {
+        console.log('Could not save player data:', error);
+      }
+    }
+
+    loadPlayerData() {
+      try {
+        const savedPlayer = localStorage.getItem('soulChainPlayer');
+        const savedPraise = localStorage.getItem('soulChainPraise');
+        if (savedPlayer) {
+          this.currentPlayer = JSON.parse(savedPlayer);
+        }
+        if (savedPraise) {
+          this.praiseFeed = JSON.parse(savedPraise);
+        }
+        return savedPlayer ? JSON.parse(savedPlayer) : null;
+      } catch (error) {
+        console.log('Could not load player data:', error);
+        return null;
+      }
+    }
+
+    updatePraiseFeed() {
+      const feed = document.getElementById('praise-feed');
+      feed.innerHTML = '<strong>🕊️ Recent Praise Feed:</strong>';
+      this.praiseFeed.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'praise-item';
+        div.textContent = `${item.from} gifted ${item.amount} coins to ${item.to}: ${item.message}`;
+        feed.appendChild(div);
+      });
+    }
+
+    updatePlayerStatus() {
+      document.getElementById('coin-count').textContent = this.currentPlayer.coinsEarned;
+      document.getElementById('gift-count').textContent = this.currentPlayer.coinsGifted;
+    }
+
+    renderBadges() {
+      const container = document.getElementById('badges-container');
+      container.innerHTML = '';
+      this.currentPlayer.badges.forEach(badge => {
+        const div = document.createElement('div');
+        div.className = 'badge';
+        const info = this.badges[badge];
+        div.textContent = `${info.icon} ${badge}`;
+        div.title = info.description;
+        container.appendChild(div);
+      });
+    }
+  }
+// Enhanced Solitaire Game with Soul Chain Integration
+  class SoulChainSolitaire {
+    constructor(soulChain) {
+      this.soulChain = soulChain;
+      this.deck = [];
+      this.waste = [];
+      this.foundations = [[], [], [], []];
+      this.tableau = [[], [], [], [], [], [], []];
+      this.moves = 0;
+      this.score = 0;
+      this.startTime = Date.now();
+      this.coinsEarnedThisGame = 0;
+      this.suitToIndex = { 'Spades': 0, 'Hearts': 1, 'Diamonds': 2, 'Clubs': 3 };
+    }
+
+    initializeGame() {
+      const suits = ['Spades', 'Hearts', 'Diamonds', 'Clubs'];
+      const ranks = ['Ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King'];
+      this.deck = [];
+      suits.forEach(suit => {
+        ranks.forEach((rank, i) => {
+          this.deck.push({ 
+            suit, rank, value: i + 1, faceUp: false,
+            color: suit === 'Hearts' || suit === 'Diamonds' ? 'red' : 'black'
+          });
+        });
+      });
+      this.shuffle();
+      this.deal();
+      this.moves = 0;
+      this.coinsEarnedThisGame = 0;
+      this.startTime = Date.now();
+      speak("New Soul Chain Solitaire game started! You'll earn coins for good moves and completing hands. Seven columns dealt with top cards face up. Say 'describe board' to hear the layout.");
+      const coinReward = this.soulChain.awardCoins(5, "Started new game");
+      this.coinsEarnedThisGame += coinReward.amount;
+      this.showCoinEarned(coinReward.amount, "Game started");
+    }
+
+    shuffle() {
+      for (let i = this.deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+      }
+    }
+
+    deal() {
+      for (let col = 0; col < 7; col++) {
+        for (let row = 0; row <= col; row++) {
+          if (this.deck.length > 0) {
+            this.tableau[col].push(this.deck.pop());
+          }
+        }
+        if (this.tableau[col].length > 0) {
+          this.tableau[col][this.tableau[col].length - 1].faceUp = true;
+        }
+      }
+    }
+
+    drawCard() {
+      this.moves++;
+      if (this.deck.length === 0) {
+        if (this.waste.length === 0) {
+          speak("Both deck and waste pile are empty. No cards to draw.");
+          return;
+        }
+        this.deck = this.waste.reverse().map(card => ({ ...card, faceUp: false }));
+        this.waste = [];
+        speak(`Deck was empty. Reshuffled ${this.deck.length} cards from waste pile back into deck.`);
+        return;
+      }
+      const card = this.deck.pop();
+      card.faceUp = true;
+      this.waste.push(card);
+      if (this.moves % 3 === 0) {
+        const coinReward = this.soulChain.awardCoins(2, "Strategic card drawing");
+        this.coinsEarnedThisGame += coinReward.amount;
+        this.showCoinEarned(coinReward.amount, "Good strategy");
+      }
+      speak(`Drew the ${card.rank} of ${card.suit}. It's now on top of the waste pile.`);
+    }
+
+    describeBoard() {
+      let description = `Current Soul Chain game: Move ${this.moves}. You've earned ${this.coinsEarnedThisGame} coins this game. `;
+      if (this.waste.length > 0) {
+        const topWaste = this.waste[this.waste.length - 1];
+        description += `Waste pile shows ${topWaste.rank} of ${topWaste.suit}. `;
+      } else {
+        description += "Waste pile is empty. ";
+      }
+      description += `Deck has ${this.deck.length} cards remaining. `;
+      description += "Foundations: ";
+      const suitNames = ['Spades', 'Hearts', 'Diamonds', 'Clubs'];
+      const foundationStatus = [];
+      for (let i = 0; i < 4; i++) {
+        if (this.foundations[i].length > 0) {
+          const topCard = this.foundations[i][this.foundations[i].length - 1];
+          foundationStatus.push(`${suitNames[i]} up to ${topCard.rank}`);
+        } else {
+          foundationStatus.push(`${suitNames[i]} empty`);
+        }
+      }
+      description += foundationStatus.join(', ') + '. ';
+      description += "Tableau columns: ";
+      for (let col = 0; col < 7; col++) {
+        const pile = this.tableau[col];
+        if (pile.length === 0) {
+          description += `Column ${col + 1} is empty. `;
+          continue;
+        }
+        let faceDownCount = 0;
+        let faceUpDesc = [];
+        for (let i = 0; i < pile.length; i++) {
+          if (!pile[i].faceUp) {
+            faceDownCount++;
+          } else {
+            faceUpDesc.push(`${pile[i].rank} of ${pile[i].suit}`);
+          }
+        }
+        description += `Column ${col + 1}: `;
+        if (faceDownCount > 0) {
+          description += `${faceDownCount} face down, then `;
+        }
+        description += faceUpDesc.join(', ') + '. ';
+      }
+      speak(description);
+    }
+
+    isGameWon() {
+      return this.foundations.every(f => f.length === 13);
+    }
+
+    winGame() {
+      const timeTaken = (Date.now() - this.startTime) / 60000;
+      const bonus = Math.floor(100 / timeTaken) + (500 - this.moves * 2);
+      const coinReward = this.soulChain.awardCoins(bonus, "Game won");
+      this.coinsEarnedThisGame += coinReward.amount;
+      speak(`Congratulations! You won the game in ${this.moves} moves and earned ${this.coinsEarnedThisGame} coins total.`);
+      this.soulChain.currentPlayer.gamesPlayed++;
+      this.soulChain.checkBadges();
+    }
+
+    flipTableauTop(col) {
+      const pile = this.tableau[col];
+      if (pile.length > 0 && !pile[pile.length - 1].faceUp) {
+        pile[pile.length - 1].faceUp = true;
+        speak(`Flipped the top card in column ${col + 1}: ${pile[pile.length - 1].rank} of ${pile[pile.length - 1].suit}.`);
+      }
+    }
+
+    getMovableStack(col) {
+      const pile = this.tableau[col];
+      if (pile.length === 0) return [];
+      let faceUpCount = 0;
+      for (let i = pile.length - 1; i >= 0; i--) {
+        if (pile[i].faceUp) {
+          faceUpCount++;
+        } else {
+          break;
+        }
+      }
+      const stack = pile.slice(pile.length - faceUpCount);
+      return stack;
+    }
+
+    moveTableauToTableau(fromCol, toCol) {
+      const stack = this.getMovableStack(fromCol);
+      if (stack.length === 0) {
+        speak("No movable cards in that column.");
+        return false;
+      }
+      const toPile = this.tableau[toCol];
+      const movingCard = stack[0];
+      let canPlace = false;
+      if (toPile.length === 0) {
+        canPlace = movingCard.value === 13;
+      } else {
+        const topTo = toPile[toPile.length - 1];
+        canPlace = movingCard.color !== topTo.color && movingCard.value === topTo.value - 1;
+      }
+      if (!canPlace) {
+        speak("Invalid move.");
+        return false;
+      }
+      this.tableau[fromCol].splice(this.tableau[fromCol].length - stack.length);
+      this.tableau[toCol].push(...stack);
+      this.flipTableauTop(fromCol);
+      this.moves++;
+      const coinReward = this.soulChain.awardCoins(3, "Tableau move");
+      this.coinsEarnedThisGame += coinReward.amount;
+      this.showCoinEarned(coinReward.amount, "Good move");
+      speak(`Moved ${stack.length} cards from column ${fromCol + 1} to column ${toCol + 1}.`);
+      if (this.isGameWon()) this.winGame();
+      return true;
+    }
+
+    moveWasteToTableau(toCol) {
+      if (this.waste.length === 0) {
+        speak("Waste pile is empty.");
+        return false;
+      }
+      const card = this.waste[this.waste.length - 1];
+      const toPile = this.tableau[toCol];
+      let canPlace = false;
+      if (toPile.length === 0) {
+        canPlace = card.value === 13;
+      } else {
+        const top = toPile[toPile.length - 1];
+        canPlace = card.color !== top.color && card.value === top.value - 1;
+      }
+      if (!canPlace) {
+        speak("Invalid move.");
+        return false;
+      }
+      this.waste.pop();
+      this.tableau[toCol].push(card);
+      this.moves++;
+      const coinReward = this.soulChain.awardCoins(5, "Waste to tableau");
+      this.coinsEarnedThisGame += coinReward.amount;
+      this.showCoinEarned(coinReward.amount, "Smart placement");
+      speak(`Moved ${card.rank} of ${card.suit} from waste to column ${toCol + 1}.`);
+      if (this.isGameWon()) this.winGame();
+      return true;
+    }
+
+    moveToFoundation(fromType, fromIndex = null) {
+      let card;
+      if (fromType === 'waste') {
+        if (this.waste.length === 0) return false;
+        card = this.waste[this.waste.length - 1];
+      } else if (fromType === 'tableau') {
+        const pile = this.tableau[fromIndex];
+        if (pile.length === 0 || !pile[pile.length - 1].faceUp) return false;
+        card = pile[pile.length - 1];
+      } else return false;
+      const suitIndex = this.suitToIndex[card.suit];
+      const f = this.foundations[suitIndex];
+      let canPlace = false;
+      if (f.length === 0) {
+        canPlace = card.value === 1;
+      } else {
+        const top = f[f.length - 1];
+        canPlace = card.value === top.value + 1;
+      }
+      if (!canPlace) {
+        speak("Cannot place that card on foundation.");
+        return false;
+      }
+      if (fromType === 'waste') {
+        this.waste.pop();
+      } else {
+        this.tableau[fromIndex].pop();
+        this.flipTableauTop(fromIndex);
+      }
+      f.push(card);
+      this.moves++;
+      const coinReward = this.soulChain.awardCoins(10, "Foundation placement");
+      this.coinsEarnedThisGame += coinReward.amount;
+      this.showCoinEarned(coinReward.amount, "Foundation build");
+      speak(`Moved ${card.rank} of ${card.suit} to ${card.suit} foundation.`);
+      if (this.isGameWon()) this.winGame();
+      return true;
+    }
+
+    showCoinEarned(amount, reason) {
+      const div = document.createElement('div');
+      div.className = 'coin-earned';
+      div.textContent = `+${amount} Soul Coins: ${reason}`;
+      document.getElementById('status-area').appendChild(div);
+      setTimeout(() => div.remove(), 5000);
+    }
+  }
+
+  // Global setup
+  const soulChain = new SoulChainCore();
+  const solitaire = new SoulChainSolitaire(soulChain);
+
+  let lastSpoken = '';
+  function speak(text) {
+    lastSpoken = text;
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
+    document.getElementById('msg').textContent = text;
+  }
+
+  let recognition;
+  if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+    recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+  } else {
+    speak('Speech recognition not supported in this browser.');
+  }
+
+  const promptButton = document.getElementById('click-prompt');
+  promptButton.addEventListener('click', () => {
+    promptButton.style.display = 'none';
+    document.getElementById('game-container').classList.add('listening');
+    speak('Voice commands activated. Say "help" for commands.');
+    if (recognition) recognition.start();
+  });
+
+  if (recognition) {
+    recognition.onresult = (event) => {
+      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+      document.getElementById('msg').textContent = `You said: ${transcript}`;
+      handleCommand(transcript);
+    };
+
+    recognition.onend = () => {
+      recognition.start();
+    };
+
+    recognition.onerror = (e) => {
+      console.log('Recognition error:', e);
+    };
+  }
+
+  function handleCommand(cmd) {
+    const colToNum = (word) => {
+      const nums = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7 };
+      return nums[word];
+    };
+
+    if (cmd === 'help') {
+      speak('Available commands: start game, draw card, describe board, game stats, move column one to column two, move waste to column three, move waste to foundation, move column four to foundation, my coins, my badges, gift 10 coins to @username with message thanks, leaderboard, praise feed, repeat.');
+    } else if (cmd === 'repeat') {
+      speak(lastSpoken);
+    } else if (cmd === 'start game') {
+      solitaire.initializeGame();
+    } else if (cmd === 'draw card') {
+      solitaire.drawCard();
+    } else if (cmd === 'describe board') {
+      solitaire.describeBoard();
+    } else if (cmd === 'game stats') {
+      const time = Math.floor((Date.now() - solitaire.startTime) / 60000);
+      speak(`Moves: ${solitaire.moves}. Time: ${time} minutes. Coins earned this game: ${solitaire.coinsEarnedThisGame}.`);
+    } else if (cmd === 'my coins') {
+      speak(`You have ${soulChain.currentPlayer.coinsEarned} soul coins.`);
+    } else if (cmd === 'my badges') {
+      speak(`Your badges: ${soulChain.currentPlayer.badges.join(', ')}.`);
+    } else if (cmd === 'leaderboard') {
+      const top = soulChain.getLeaderboard();
+      let text = 'Top players by coins: ';
+      top.forEach((p, i) => {
+        text += `${i + 1}. ${p.playerId} with ${p.coinsEarned} coins. `;
+      });
+      speak(text);
+    } else if (cmd === 'praise feed') {
+      let text = 'Recent praise: ';
+      soulChain.praiseFeed.forEach(item => {
+        text += `${item.from} gifted ${item.amount} to ${item.to}: ${item.message}. `;
+      });
+      speak(text);
+    } else if (cmd.startsWith('gift')) {
+      const parts = cmd.split(' ');
+      const amountIndex = parts.findIndex(p => !isNaN(parseInt(p)));
+      const amount = parseInt(parts[amountIndex]);
+      if (isNaN(amount)) {
+        speak('Please specify amount.');
+        return;
+      }
+      const toIndex = parts.indexOf('to');
+      if (toIndex === -1) {
+        speak('Please specify recipient.');
+        return;
+      }
+      const recipient = parts[toIndex + 1];
+      if (!recipient.startsWith('@')) {
+        speak('Recipient should be @username.');
+        return;
+      }
+      let message = 'Keep building the chain!';
+      const messageIndex = parts.indexOf('message');
+      if (messageIndex !== -1) {
+        message = parts.slice(messageIndex + 1).join(' ');
+      }
+      const result = soulChain.giftCoins(recipient, amount, message);
+      if (result.success) {
+        speak(`Gifted ${amount} coins to ${recipient}.`);
+        soulChain.updatePraiseFeed();
+        soulChain.updatePlayerStatus();
+      } else {
+        speak(result.error);
+      }
+    } else {
+      let match = cmd.match(/move column (\w+) to column (\w+)/);
+      if (match) {
+        const from = colToNum(match[1]);
+        const to = colToNum(match[2]);
+        if (from && to) {
+          solitaire.moveTableauToTableau(from - 1, to - 1);
+        } else {
+          speak('Invalid column numbers.');
+        }
+        soulChain.updatePlayerStatus();
+        return;
+      }
+      match = cmd.match(/move waste to column (\w+)/);
+      if (match) {
+        const to = colToNum(match[1]);
+        if (to) {
+          solitaire.moveWasteToTableau(to - 1);
+        } else {
+          speak('Invalid column number.');
+        }
+        soulChain.updatePlayerStatus();
+        return;
+      }
+      if (cmd === 'move waste to foundation') {
+        solitaire.moveToFoundation('waste');
+        soulChain.updatePlayerStatus();
+        return;
+      }
+      match = cmd.match(/move column (\w+) to foundation/);
+      if (match) {
+        const from = colToNum(match[1]);
+        if (from) {
+          solitaire.moveToFoundation('tableau', from - 1);
+        } else {
+          speak('Invalid column number.');
+        }
+        soulChain.updatePlayerStatus();
+        return;
+      }
+      speak('Command not recognized. Say "help" for list.');
+    }
+    soulChain.updatePlayerStatus();
+  }
+
+  // Offline indicator
+  if (!navigator.onLine) {
+    document.getElementById('offline-indicator').classList.add('show');
+  }
+</script>
+</body>
+</html>
