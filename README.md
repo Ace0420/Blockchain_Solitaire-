@@ -13,11 +13,3 @@ A voice-first, blind-friendly browser game built for Android 13 and TalkBack. Fu
 2. Ensure all icons and manifest paths are correct
 3. Test on Android 13 with TalkBack enabled
 
-## Future Plans
-- NLP parsing for complex move commands
-- Save/load game state via localStorage
-- Mythic narrator personas for onboarding
-
----
-
-Built by Ace & Copilot — mythic systems, resilient design.
